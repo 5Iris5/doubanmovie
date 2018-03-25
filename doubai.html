@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+	<title>移动端项目之豆瓣电影</title>
+	<link rel="stylesheet" href="http://at.alicdn.com/t/font_441987_jku0r4ifamcuwhfr.css">
+	<style>
+		*{
+			margin:0px;
+			padding:0px;
+			box-sizing:border-box;
+		}
+		a{
+			text-decoration: none;
+			color:#333;
+		}
+		html,body{
+			width:100%;
+			height:100%;
+		}
+		body{
+			position:relative;
+			font-size:12px;
+			line-height:1.2;
+			background:#fff;
+		}
+		main{
+			height:calc(100vh - 50px);
+			overflow:scroll;
+			-webkit-overflow-scrolling:touch;  /*移动端滚动时有弹性效果*/
+		}
+		main>section{
+			display:none;
+		}
+		main>section.active{
+			display:block;
+			margin:0px 10px;
+		}
+
+		.item{
+			border-bottom: 1px solid #ccc;
+			padding:10px 0px;
+		}
+		.item>a{
+			display:block;
+			display:flex;
+		}
+		.item .cover,
+		.item .cover>img{
+			width:70px;
+		}
+		.item .detail{
+			flex:1;
+			padding-left:10px;
+		}
+		.item .detail>h2{
+			font-size:16px;
+		}
+		.item .detail .extra{
+			color:#999;
+			margin-top:4px;
+		}
+		.item .detail .score{
+			color:#ff5722;
+		}
+		.loading{
+			padding:5px;
+			text-align:center;
+			display:none;
+		}
+		.loading .iconfont{
+			display:inline-block;
+			animation:1s rotate linear infinite;
+		}
+		@keyframes rotate{
+			0% {transform:rotate(0deg);}
+			100% {transform:rotate(360deg);}
+		}
+		footer{
+			position:absolute; /*绝对定位的宽度要是100%，否则容器无法撑开*/
+			bottom:0;
+			width:100%;
+			height:50px;
+			border:1px solid #ccc;
+			display:flex;  /*footer里面的div元素水平排列*/
+		}
+		footer>div{
+			flex:1;   /*每个元素所占空间均匀*/
+			text-align:center;
+		}
+		footer>div>span{
+			display:block;  /*footer里面的span元素垂直排列*/
+			padding-top:5px;
+		}
+		footer>div.active{
+			color:#ff5722;
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<section class="active">
+			<div id="top250">
+				<!-- <div class="item">
+					<a href="#">
+						<div class="cover">
+							<img src="http://img7.doubanio.com/view/movie_poster_cover/ipst/public/p1910813120.jpg" alt="">
+						</div>
+						<div class="detail">
+							<h2>霸王别姬</h2>
+							<div class="extra"><span class="score">9.3分</span><span class="collect">/ 1000收藏</span></div>
+							<div class="extra"><span class="years">1994 </span><span class="types">/ 剧情 / 爱情 / 同性</span></div>
+							<div class="extra"><span class="director">导演：陈凯歌</span></div>
+							<div class="extra"><span class="casts">主演：张国荣、张丰毅、巩俐</span></div>
+						</div>
+					</a>
+				</div> -->
+			</div>
+			<div class="loading"><span class="iconfont icon-loading"></span></div>
+		</section>
+		<section>2</section>
+		<section>3</section>
+	</main>
+	<footer>
+		<div class="active"><span class="iconfont icon-paihang1"></span><span>Top250</span></div>
+		<div><span class="iconfont icon-beimei"></span><span>北美</span></div>
+		<div><span class="iconfont icon-sousuo"></span><span>搜索</span></div>
+	</footer>
+
+	<script>
+		$('footer div').on('click',function(){
+			$(this).addClass('active')
+			       .siblings()
+			       .removeClass('active')
+			$(this).parents('body').find('section')
+			       .eq($(this).index())
+			       .addClass('active')
+			       .siblings()
+			       .removeClass('active')
+		})
+
+		var index = 0
+		var isLoading = false  //isLoading表示数据正在加载的状态
+		start()   //刚开始的时候调用一次
+		function start(){
+			if(isLoading) return  //如果是正在加载的状态，则忽略本次请求
+			isLoading = true   //表示加载状态
+		    $('.loading').show()
+			$.ajax({
+				url:'http://api.douban.com/v2/movie/top250',  //豆瓣的这个接口其实又限额的，好像是每分钟只能请求几十次,请求次数太多会被禁用
+				type:'GET',
+				data:{
+					start:index,
+					count:20
+				},
+				dataType:'jsonp'
+			}).done(function(ret){
+				console.log(ret)
+				setData(ret)  //实参  渲染数据
+				index += 20
+			}).fail(function(){
+				console.log('error...')
+			}).always(function(){
+				isLoading = false  //数据到来后设为false
+				$('.loading').hide()  //不管数据是否成功到来，重新设为没加载的状态！
+			})
+		}
+
+		var clock    //数据节流
+		//将页面滚动到底部后，从外来api中调用新的数据生成dom节点展示到页面
+		//1.如何判断页面滚动到底部？
+		//（方法1）底部设置一个透明元素，锁定此元素，若视口里看得见它了，则发送请求，再次申请数据。
+		//（方法2）获取目标元素的长度，监听目标元素父容器的滚动。当滚动时，判断是否目标元素父容器的长度+目标元素父容器的头尾滚动长度【$('目标元素的父容器').scrollTop()】=目标元素的长度【$('目标元素').height()】？如果相等的话，则发送请求，再次申请数据
+		$('main').scroll(function(){
+			if(clock){
+				clearTimeout(clock)
+			}
+			clock = setTimeout(function(){
+				if($('section').eq(0).height() - 10 <= $('main').height() + $('main').scrollTop()){
+					start()  //调用封装的start()函数失败，则可能是条件太严格了
+				}
+			},300)
+		})  //如果调用start()函数失败，则可能是条件太严格了,浏览器算不好，可以将==换成大于或小于
+
+		//调用外来api的数据，将所需数据生成dom节点展示到页面
+		function setData(data){  //形参
+			data.subjects.forEach(function(movie){  //遍历数组每一项生成一个dom节点后，在将生成的dom放入页面；movie对应数组内的每一项
+				var template = '<div class="item">\
+						<a href="#">\
+							<div class="cover">\
+								<img src="http://img7.doubanio.com/view/movie_poster_cover/ipst/public/p1910813120.jpg" alt="">\
+							</div>\
+							<div class="detail">\
+								<h2>霸王别姬</h2>\
+								<div class="extra"><span class="score">9.3</span>分 / <span class="collect">1000</span>收藏</div>\
+								<div class="extra"><span class="years">1994 </span> / <span class="types">/ 剧情 / 爱情 / 同性</span></div>\
+								<div class="extra">导演：<span class="director">陈凯歌</span></div>\
+								<div class="extra">主演：<span class="actors">张国荣、张丰毅、巩俐</span></div>\
+							</div>\
+						</a>\
+				    </div>'
+			var $node = $(template)
+			$node.find('.cover img').attr('src',movie.images.small)  //在数据库里面调用所需元素类型
+			$node.find('.detail h2').text(movie.title)
+			$node.find('.score').text(movie.rating.average)
+			$node.find('.collect').text(movie.collect_count)
+			$node.find('.years').text(movie.year)
+			$node.find('.types').text(movie.genres.join(' / '))
+			$node.find('.director').text(function(){
+				var directorsArr = []
+				movie.directors.forEach(function(item){
+					directorsArr.push(item.name)
+				})
+				return directorsArr.join('、')
+			})
+			$node.find('.actors').text(function(){
+				var castsArr = []
+				movie.casts.forEach(function(item){
+					castsArr.push(item.name)
+				})
+				return castsArr.join('、')
+			})
+			$('#top250').append($node)  //在第一个section里面append上行代码的内容
+			})
+		}
+	</script>
+</body>
+</html>
