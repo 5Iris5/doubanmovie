@@ -5,7 +5,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 	<title>移动端项目之豆瓣电影</title>
-	<link rel="stylesheet" href="http://at.alicdn.com/t/font_441987_jku0r4ifamcuwhfr.css">
+	<link rel="stylesheet" href="https://at.alicdn.com/t/font_441987_jku0r4ifamcuwhfr.css">
 	<style>
 		*{
 			margin:0px;
@@ -149,7 +149,7 @@
 			isLoading = true   //表示加载状态
 		    $('.loading').show()
 			$.ajax({
-				url:'http://api.douban.com/v2/movie/top250',  //豆瓣的这个接口其实又限额的，好像是每分钟只能请求几十次,请求次数太多会被禁用
+				url:'https://api.douban.com/v2/movie/top250',  //豆瓣的这个接口其实又限额的，好像是每分钟只能请求几十次,请求次数太多会被禁用
 				type:'GET',
 				data:{
 					start:index,
@@ -190,7 +190,7 @@
 				var template = '<div class="item">\
 						<a href="#">\
 							<div class="cover">\
-								<img src="http://img7.doubanio.com/view/movie_poster_cover/ipst/public/p1910813120.jpg" alt="">\
+								<img src="https://img7.doubanio.com/view/movie_poster_cover/ipst/public/p1910813120.jpg" alt="">\
 							</div>\
 							<div class="detail">\
 								<h2>霸王别姬</h2>\
